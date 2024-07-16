@@ -21,6 +21,8 @@ def text_to_vector(text):
     return response.data[0].embedding
 
 
+
+
 def save_pickle(text, file):
         
     with open(file, "wb") as f:
@@ -37,3 +39,4 @@ def load_pickle(file):
             SystemPrompt= {}
 
     return SystemPrompt
+

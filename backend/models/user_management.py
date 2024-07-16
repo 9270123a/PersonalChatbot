@@ -1,6 +1,5 @@
 import json
 import os 
-import pickle
 
 
 
@@ -16,6 +15,7 @@ class UserManagement:
 
     def get_current_user(self):
         return self.current_user
+    
     def log_out(self):
         self.current_user = None
 
@@ -23,10 +23,9 @@ class UserManagement:
         if os.path.exists(self.userfile):
             with open(self.userfile, 'r') as f:
                 return json.load(f)
-        self.users = {}
+        return {} 
 
     def save_user(self):
-
         with open(self.userfile, 'w') as f:
             json.dump(self.users, f)
 
