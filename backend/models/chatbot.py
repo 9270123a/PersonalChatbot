@@ -3,35 +3,26 @@ import os , sys
 from dotenv import load_dotenv
 backend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, backend_path)
-from .vector_db import VectorDB
-
+from models.vector_db import VectorDB
+import utlities.ultis
 class Chatbot:
-    def __init__(self, username = "user"):
+    def __init__(self, openai_client):
 
         load_dotenv()
-        self.client = OpenAI(
-            # This is the default and can be omitted
-            api_key=os.environ.get("OPENAI_API_KEY"),
-        )
+        self.client = openai_client
         self.conversation_history = []
         self.model = "gpt-3.5-turbo"
-        self.default_system_prompt = "You are a helpful assistant."
-        self.username = username
-        os.makedirs(f"./user_data_{self.username}", exist_ok=True)
-        self.vc_db = VectorDB(f"./user_data_{self.username}")
-        self.history_info =[]
-
+        self.system_prompt= ""
     
-    def send_messages(self, text = "hello"):
+    def send_messages(self, text, VecDB):
 
-        
-        relevant_info = self.vc_db.load_VectorDB(text)
+
+        relevant_info = VecDB.load_VectorDB(text)
         messages = [
-            {'role':'system', "content":self.default_system_prompt},
+            {'role':'system', "content":self.system_prompt},
             {'role':'system', "content": f"Relevant information: {relevant_info}"}
             
         ]
-        messages.extend(self.history_info)
         messages.append({'role': 'user', 'content': text})
         response = self.client.chat.completions.create(
             model=self.model,
@@ -43,11 +34,17 @@ class Chatbot:
         assistant_message = response_dict['choices'][0]['message']['content']
         self.conversation_history.append({'role': 'user', 'content': text})
         self.conversation_history.append({'role': 'assistant', 'content': assistant_message})
+        VecDB.save_vectorDB(text)
+        VecDB.save_vectorDB(assistant_message)
         return assistant_message
 
+            
+                 
     def create_system_prompt(self, pre_chat=-5):
-
-        history_text = dict(list(self.chat_history.items())[pre_chat:])
+        
+        history_item = utlities.ultis.load_pickle(self.System_file)
+        
+        history_text = dict(list(history_item.items())[pre_chat:])
 
         prompt = f"""基於以下上下文和對話歷史，為 AI 助手生成一個系統提示。該系統提示應指導 AI 調整語氣、專業知識和個性，以最佳方式滿足使用者的需求和對話上下文。
 
@@ -67,7 +64,20 @@ class Chatbot:
 
 
         response_dict = response.to_dict()
-        return response_dict['choices'][0]['message']['content']
+        self.default_system_prompt = response_dict
+        print("已創建新的system_prompt")
 
         
+    def save_system_prompt(self, current_prompt, current_user):
+        
+        system_file = f"/user_data_{current_user}/system_prompt.txt"
+        with open(system_file, 'w', encoding='utf-8') as file:
+            file.write(current_prompt)
+        return f"已成功儲存 {system_file}"
 
+    def load_system_prompt(self, current_user):
+        system_file = f"./user_data_{current_user}/system_prompt.txt"
+        
+        with open(system_file, 'r', encoding='utf-8') as file:
+            self.system_prompt = file.read().strip()
+        return self.system_prompt

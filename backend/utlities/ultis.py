@@ -7,11 +7,11 @@ import pickle
 
 
 
-def text_to_vector(text):
+def text_to_vector(text, client):
 
     load_dotenv()
     openai.api_key = os.getenv('OPEN_API')
-    response = openai.embeddings.create(
+    response = client.embeddings.create(
 
         input = "text",
         model="text-embedding-ada-002"
